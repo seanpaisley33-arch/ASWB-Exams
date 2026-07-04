@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Send, Users, MessageSquare, ClipboardList, CheckCircle2, User, Phone, MapPin, Calendar, Clock, BookOpen, AlertCircle, Trash2, Loader2, Paperclip, X, FileIcon, ImageIcon, Check, CheckCheck, Mic, Square } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Send, Users, MessageSquare, ClipboardList, CheckCircle2, User, Phone, MapPin, Calendar, Clock, BookOpen, AlertCircle, Trash2, Loader2, Paperclip, X, FileIcon, ImageIcon, Check, CheckCheck, Mic, Square, MoreVertical, Copy, Edit2, Download, Reply } from 'lucide-react'
 import { deleteScheduleRequest, sendEmailNotification } from '@/app/actions'
 import { MessageAttachment } from '@/components/MessageAttachment'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -37,6 +38,9 @@ export function DashboardClient({
   const [clientTyping, setClientTyping] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingMessageText, setEditingMessageText] = useState('')
+  const [replyingTo, setReplyingTo] = useState<{id: string, body: string, sender: string} | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -153,23 +157,28 @@ export function DashboardClient({
         })
       }
 
+      const textToSend = replyingTo 
+        ? `> ${replyingTo.body}\n\n${newMessage.trim()}`
+        : newMessage.trim()
+
       // 2. Send text message if exists
-      if (newMessage.trim()) {
+      if (textToSend) {
         const { error } = await supabase
           .from('chat_messages')
           .insert({
             request_id: selectedRequestId,
             sender_type: 'admin',
-            message_body: newMessage.trim()
+            message_body: textToSend
           })
         if (error) throw error
       }
 
       // 3. Send Email Notification (Non-blocking)
-      sendEmailNotification(selectedRequestId, newMessage.trim() || 'Sent an attachment').catch(console.error)
+      sendEmailNotification(selectedRequestId, textToSend || 'Sent an attachment').catch(console.error)
 
       // 4. Clear everything on success
       setNewMessage('')
+      setReplyingTo(null)
       setSelectedFiles([])
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
@@ -270,6 +279,17 @@ export function DashboardClient({
   const handleDeleteMessage = async (msgId: string) => {
     if (!confirm("Are you sure you want to delete this message?")) return
     await supabase.from('chat_messages').delete().eq('id', msgId)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId) return
+    await supabase.from('chat_messages').update({ message_body: editingMessageText.trim(), is_edited: true }).eq('id', editingMessageId)
+    setEditingMessageId(null)
+    setEditingMessageText('')
+  }
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text)
   }
 
   const handleDeleteClient = async () => {
@@ -537,45 +557,91 @@ export function DashboardClient({
                         const isAdmin = msg.sender_type === 'admin'
                         return (
                           <div key={msg.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} group relative`}>
-                            {isAdmin && (
-                              <button 
-                                onClick={() => handleDeleteMessage(msg.id)}
-                                className="absolute -left-8 top-1/2 -translate-y-1/2 w-6 h-6 bg-red-100 text-red-500 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex hover:bg-red-200"
-                                title="Delete Message"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                            <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
-                              isAdmin 
-                                ? 'bg-blue-600 text-white rounded-tr-sm shadow-sm' 
-                                : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm'
-                            }`}>
-                              {msg.message_body && <p className="whitespace-pre-wrap">{msg.message_body}</p>}
-                              {msg.file_url && (
-                                <MessageAttachment 
-                                  fileUrl={msg.file_url} 
-                                  fileType={msg.file_type || 'application/octet-stream'} 
-                                  fileName={msg.file_name || 'Attachment'} 
-                                />
-                              )}
-                              <span className={`text-[9px] mt-2 flex items-center opacity-80 ${isAdmin ? 'text-blue-100' : 'text-slate-400'}`}>
-                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                {isAdmin && (
-                                  <span className="ml-1 flex items-center">
-                                    • 
-                                    {msg.is_read ? (
-                                      <span className="flex items-center ml-1 text-blue-100" title="Seen by Client">
-                                        <CheckCheck className="w-3 h-3" />
-                                      </span>
-                                    ) : (
-                                      <span className="flex items-center ml-1 opacity-70" title="Delivered">
-                                        <Check className="w-3 h-3" />
-                                      </span>
+                            
+                            <div className={`flex items-center gap-2 ${isAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
+                              <div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+                                isAdmin 
+                                  ? 'bg-blue-600 text-white rounded-tr-sm shadow-sm' 
+                                  : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm'
+                              }`}>
+                                {editingMessageId === msg.id ? (
+                                  <div className="flex flex-col gap-2 min-w-[200px]">
+                                    <Textarea 
+                                      value={editingMessageText}
+                                      onChange={(e) => setEditingMessageText(e.target.value)}
+                                      className="text-slate-800 text-sm min-h-[60px]"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <Button size="sm" variant="ghost" className={isAdmin ? 'text-blue-100 hover:text-white hover:bg-blue-700' : ''} onClick={() => setEditingMessageId(null)}>Cancel</Button>
+                                      <Button size="sm" onClick={handleSaveEdit} className="bg-white text-blue-600 hover:bg-slate-50">Save</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    {msg.message_body && <p className="whitespace-pre-wrap">{msg.message_body}</p>}
+                                    {msg.file_url && (
+                                      <MessageAttachment 
+                                        fileUrl={msg.file_url} 
+                                        fileType={msg.file_type || 'application/octet-stream'} 
+                                        fileName={msg.file_name || 'Attachment'} 
+                                      />
                                     )}
-                                  </span>
+                                    <span className={`text-[9px] mt-2 flex items-center opacity-80 ${isAdmin ? 'text-blue-100' : 'text-slate-400'}`}>
+                                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      {msg.is_edited && <span className="ml-1 italic">(edited)</span>}
+                                      {isAdmin && (
+                                        <span className="ml-1 flex items-center">
+                                          • 
+                                          {msg.is_read ? (
+                                            <span className="flex items-center ml-1 text-blue-100" title="Seen by Client">
+                                              <CheckCheck className="w-3 h-3" />
+                                            </span>
+                                          ) : (
+                                            <span className="flex items-center ml-1 opacity-70" title="Delivered">
+                                              <Check className="w-3 h-3" />
+                                            </span>
+                                          )}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </>
                                 )}
-                              </span>
+                              </div>
+                              
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className={`w-8 h-8 rounded-full items-center justify-center text-slate-400 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity flex`}>
+                                    <MoreVertical size={16} />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align={isAdmin ? "end" : "start"} className="w-48">
+                                  {msg.message_body && (
+                                    <DropdownMenuItem onClick={() => handleCopyText(msg.message_body || '')}>
+                                      <Copy className="mr-2 h-4 w-4" /> Copy Text
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => setReplyingTo({ id: msg.id, body: msg.message_body || 'Attachment', sender: isAdmin ? 'You' : selectedRequest?.full_name || 'Client' })}>
+                                    <Reply className="mr-2 h-4 w-4" /> Reply
+                                  </DropdownMenuItem>
+                                  {msg.file_url && (
+                                    <DropdownMenuItem onClick={() => window.open(msg.file_url, '_blank')}>
+                                      <Download className="mr-2 h-4 w-4" /> Download
+                                    </DropdownMenuItem>
+                                  )}
+                                  {isAdmin && (
+                                    <DropdownMenuItem onClick={() => {
+                                      setEditingMessageId(msg.id)
+                                      setEditingMessageText(msg.message_body || '')
+                                    }}>
+                                      <Edit2 className="mr-2 h-4 w-4" /> Edit Message
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-700" onClick={() => handleDeleteMessage(msg.id)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Message
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+
                             </div>
                           </div>
                         )

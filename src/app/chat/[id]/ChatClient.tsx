@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { EditRequestModal } from '@/components/EditRequestModal'
 import { MessageAttachment } from '@/components/MessageAttachment'
-import { Send, Clock, BookOpen, ShieldCheck, Copy, Check, Home, Target, Paperclip, Loader2, X, FileIcon, ImageIcon, CheckCheck, Mic, Square } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Send, Clock, BookOpen, ShieldCheck, Copy, Check, Home, Target, Paperclip, Loader2, X, FileIcon, ImageIcon, CheckCheck, Mic, Square, MoreVertical, Edit2, Download, Reply, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -22,6 +23,9 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
   const [adminTyping, setAdminTyping] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingMessageText, setEditingMessageText] = useState('')
+  const [replyingTo, setReplyingTo] = useState<{id: string, body: string, sender: string} | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -129,20 +133,25 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
         })
       }
 
+      const textToSend = replyingTo 
+        ? `> ${replyingTo.body}\n\n${newMessage.trim()}`
+        : newMessage.trim()
+
       // 2. Send text message if exists
-      if (newMessage.trim()) {
+      if (textToSend) {
         const { error } = await supabase
           .from('chat_messages')
           .insert({
             request_id: request.id,
             sender_type: 'client',
-            message_body: newMessage.trim()
+            message_body: textToSend
           })
         if (error) throw error
       }
 
       // 3. Clear everything on success
       setNewMessage('')
+      setReplyingTo(null)
       setSelectedFiles([])
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
@@ -247,6 +256,17 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     navigator.clipboard.writeText(window.location.href)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId) return
+    await supabase.from('chat_messages').update({ message_body: editingMessageText.trim(), is_edited: true }).eq('id', editingMessageId)
+    setEditingMessageId(null)
+    setEditingMessageText('')
+  }
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text)
   }
 
   return (
@@ -365,38 +385,89 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 20 }}
                     key={msg.id} 
-                    className={`flex ${isClient ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${isClient ? 'justify-end' : 'justify-start'} group relative`}
                   >
-                    <div className={`max-w-[85%] md:max-w-[70%] px-6 py-4 shadow-sm ${
-                      isClient 
-                        ? 'bg-blue-600 text-white rounded-[2rem] rounded-tr-sm' 
-                        : 'bg-white border border-slate-200/60 text-slate-800 rounded-[2rem] rounded-tl-sm'
-                    }`}>
-                      {msg.message_body && <p className="whitespace-pre-wrap font-medium leading-relaxed">{msg.message_body}</p>}
-                      {msg.file_url && (
-                        <MessageAttachment 
-                          fileUrl={msg.file_url} 
-                          fileType={msg.file_type || 'application/octet-stream'} 
-                          fileName={msg.file_name || 'Attachment'} 
-                        />
-                      )}
-                      <span className={`text-[10px] mt-3 flex items-center font-medium ${isClient ? 'text-blue-200' : 'text-slate-400'}`}>
-                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                        {isClient && (
-                          <span className="ml-1.5 flex items-center">
-                            • 
-                            {msg.is_read ? (
-                              <span className="flex items-center ml-1.5 text-blue-200" title="Seen by Coach">
-                                <CheckCheck className="w-3.5 h-3.5" />
-                              </span>
-                            ) : (
-                              <span className="flex items-center ml-1.5 opacity-70" title="Delivered">
-                                <Check className="w-3.5 h-3.5" />
-                              </span>
+                    <div className={`flex items-start gap-2 ${isClient ? 'flex-row-reverse' : 'flex-row'} max-w-full md:max-w-[85%]`}>
+                      <div className={`px-6 py-4 shadow-sm relative ${
+                        isClient 
+                          ? 'bg-blue-600 text-white rounded-[2rem] rounded-tr-sm' 
+                          : 'bg-white border border-slate-200/60 text-slate-800 rounded-[2rem] rounded-tl-sm'
+                      }`}>
+                        {editingMessageId === msg.id ? (
+                          <div className="flex flex-col gap-2 min-w-[200px]">
+                            <Textarea 
+                              value={editingMessageText}
+                              onChange={(e) => setEditingMessageText(e.target.value)}
+                              className={`text-sm min-h-[60px] ${isClient ? 'text-slate-900 bg-white' : 'text-slate-900'}`}
+                            />
+                            <div className="flex justify-end gap-2 mt-1">
+                              <Button size="sm" variant="ghost" className={isClient ? 'text-blue-100 hover:text-white hover:bg-blue-700 h-7 text-xs' : 'h-7 text-xs'} onClick={() => setEditingMessageId(null)}>Cancel</Button>
+                              <Button size="sm" onClick={handleSaveEdit} className="bg-white text-blue-600 hover:bg-slate-50 h-7 text-xs">Save</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {msg.message_body && <p className="whitespace-pre-wrap font-medium leading-relaxed">{msg.message_body}</p>}
+                            {msg.file_url && (
+                              <MessageAttachment 
+                                fileUrl={msg.file_url} 
+                                fileType={msg.file_type || 'application/octet-stream'} 
+                                fileName={msg.file_name || 'Attachment'} 
+                              />
                             )}
-                          </span>
+                            <span className={`text-[10px] mt-3 flex items-center font-medium ${isClient ? 'text-blue-200' : 'text-slate-400'}`}>
+                              {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                              {msg.is_edited && <span className="ml-1 italic">(edited)</span>}
+                              {isClient && (
+                                <span className="ml-1.5 flex items-center">
+                                  • 
+                                  {msg.is_read ? (
+                                    <span className="flex items-center ml-1.5 text-blue-200" title="Seen by Coach">
+                                      <CheckCheck className="w-3.5 h-3.5" />
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center ml-1.5 opacity-70" title="Delivered">
+                                      <Check className="w-3.5 h-3.5" />
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </span>
+                          </>
                         )}
-                      </span>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className={`w-8 h-8 rounded-full items-center justify-center text-slate-400 hover:bg-slate-200 opacity-0 group-hover:opacity-100 transition-opacity flex shrink-0 mt-2`}>
+                            <MoreVertical size={16} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={isClient ? "end" : "start"} className="w-48">
+                          {msg.message_body && (
+                            <DropdownMenuItem onClick={() => handleCopyText(msg.message_body || '')}>
+                              <Copy className="mr-2 h-4 w-4" /> Copy Text
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => setReplyingTo({ id: msg.id, body: msg.message_body || 'Attachment', sender: isClient ? 'You' : 'Coach' })}>
+                            <Reply className="mr-2 h-4 w-4" /> Reply
+                          </DropdownMenuItem>
+                          {msg.file_url && (
+                            <DropdownMenuItem onClick={() => window.open(msg.file_url, '_blank')}>
+                              <Download className="mr-2 h-4 w-4" /> Download
+                            </DropdownMenuItem>
+                          )}
+                          {isClient && (
+                            <DropdownMenuItem onClick={() => {
+                              setEditingMessageId(msg.id)
+                              setEditingMessageText(msg.message_body || '')
+                            }}>
+                              <Edit2 className="mr-2 h-4 w-4" /> Edit Message
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
                     </div>
                   </motion.div>
                 )
@@ -447,6 +518,19 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {/* Replying To Preview */}
+          {replyingTo && (
+            <div className="flex items-center justify-between bg-slate-100 border-l-2 border-blue-500 p-2 rounded-md mb-4 max-w-5xl mx-auto w-full text-sm text-slate-600">
+              <div className="truncate flex-1 pr-4">
+                <span className="font-semibold text-xs text-blue-600 block">Replying to {replyingTo.sender}</span>
+                <span className="truncate block opacity-80">{replyingTo.body}</span>
+              </div>
+              <button type="button" onClick={() => setReplyingTo(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={16} />
+              </button>
             </div>
           )}
 
