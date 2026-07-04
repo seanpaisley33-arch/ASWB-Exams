@@ -43,6 +43,8 @@ export function EditRequestModal({ request }: { request: ScheduleRequest }) {
     }
   }
 
+  const selectItemStyles = "py-2.5 px-4 cursor-pointer focus:bg-blue-50 focus:text-blue-700 transition-colors rounded-lg font-medium text-slate-700 my-0.5"
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger render={
@@ -77,13 +79,13 @@ export function EditRequestModal({ request }: { request: ScheduleRequest }) {
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Select Exam" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Associate">Associate</SelectItem>
-                  <SelectItem value="BSW">BSW (Bachelors)</SelectItem>
-                  <SelectItem value="MSW">MSW (Masters)</SelectItem>
-                  <SelectItem value="Advanced Generalist">Advanced Generalist</SelectItem>
-                  <SelectItem value="LCSW">LCSW (Clinical)</SelectItem>
-                  <SelectItem value="Other">Other (Specify manually)</SelectItem>
+                <SelectContent className="rounded-2xl border-slate-200 shadow-2xl p-2 bg-white/95 backdrop-blur-xl">
+                  <SelectItem value="Associate" className={selectItemStyles}>Associate</SelectItem>
+                  <SelectItem value="BSW" className={selectItemStyles}>BSW (Bachelors)</SelectItem>
+                  <SelectItem value="MSW" className={selectItemStyles}>MSW (Masters)</SelectItem>
+                  <SelectItem value="Advanced Generalist" className={selectItemStyles}>Advanced Generalist</SelectItem>
+                  <SelectItem value="LCSW" className={selectItemStyles}>LCSW (Clinical)</SelectItem>
+                  <SelectItem value="Other" className={selectItemStyles}>Other (Specify manually)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -126,11 +128,11 @@ export function EditRequestModal({ request }: { request: ScheduleRequest }) {
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Select Frequency" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Daily">Daily</SelectItem>
-                  <SelectItem value="Weekly">Weekly</SelectItem>
-                  <SelectItem value="Bi-weekly">Bi-weekly (Every 2 weeks)</SelectItem>
-                  <SelectItem value="Monthly">Monthly</SelectItem>
+                <SelectContent className="rounded-2xl border-slate-200 shadow-2xl p-2 bg-white/95 backdrop-blur-xl">
+                  <SelectItem value="Daily" className={selectItemStyles}>Daily</SelectItem>
+                  <SelectItem value="Weekly" className={selectItemStyles}>Weekly</SelectItem>
+                  <SelectItem value="Bi-weekly" className={selectItemStyles}>Bi-weekly (Every 2 weeks)</SelectItem>
+                  <SelectItem value="Monthly" className={selectItemStyles}>Monthly</SelectItem>
                 </SelectContent>
               </Select>
             </div>

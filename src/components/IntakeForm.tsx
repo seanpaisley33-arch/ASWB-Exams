@@ -37,6 +37,7 @@ export function IntakeForm() {
 
   const inputStyles = "h-12 bg-white/50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 transition-all duration-300 shadow-sm rounded-xl"
   const labelStyles = "text-slate-700 font-semibold text-sm flex items-center gap-2 mb-1.5"
+  const selectItemStyles = "py-2.5 px-4 cursor-pointer focus:bg-blue-50 focus:text-blue-700 transition-colors rounded-lg font-medium text-slate-700 my-0.5"
 
   return (
     <Card className="w-full max-w-xl mx-auto shadow-2xl shadow-blue-900/10 border-0 bg-white/70 backdrop-blur-2xl rounded-3xl overflow-hidden relative group">
@@ -83,13 +84,13 @@ export function IntakeForm() {
                 <SelectTrigger className={inputStyles}>
                   <SelectValue placeholder="Select Exam" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                  <SelectItem value="Associate">Associate</SelectItem>
-                  <SelectItem value="BSW">BSW (Bachelors)</SelectItem>
-                  <SelectItem value="MSW">MSW (Masters)</SelectItem>
-                  <SelectItem value="Advanced Generalist">Advanced Generalist</SelectItem>
-                  <SelectItem value="LCSW">LCSW (Clinical)</SelectItem>
-                  <SelectItem value="Other">Other (Specify manually)</SelectItem>
+                <SelectContent className="rounded-2xl border-slate-200 shadow-2xl p-2 bg-white/95 backdrop-blur-xl">
+                  <SelectItem value="Associate" className={selectItemStyles}>Associate</SelectItem>
+                  <SelectItem value="BSW" className={selectItemStyles}>BSW (Bachelors)</SelectItem>
+                  <SelectItem value="MSW" className={selectItemStyles}>MSW (Masters)</SelectItem>
+                  <SelectItem value="Advanced Generalist" className={selectItemStyles}>Advanced Generalist</SelectItem>
+                  <SelectItem value="LCSW" className={selectItemStyles}>LCSW (Clinical)</SelectItem>
+                  <SelectItem value="Other" className={selectItemStyles}>Other (Specify manually)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -144,11 +145,11 @@ export function IntakeForm() {
                 <SelectTrigger className={`bg-white ${inputStyles}`}>
                   <SelectValue placeholder="Select Frequency" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl shadow-xl">
-                  <SelectItem value="Daily">Daily</SelectItem>
-                  <SelectItem value="Weekly">Weekly</SelectItem>
-                  <SelectItem value="Bi-weekly">Bi-weekly (Every 2 weeks)</SelectItem>
-                  <SelectItem value="Monthly">Monthly</SelectItem>
+                <SelectContent className="rounded-2xl border-slate-200 shadow-2xl p-2 bg-white/95 backdrop-blur-xl">
+                  <SelectItem value="Daily" className={selectItemStyles}>Daily</SelectItem>
+                  <SelectItem value="Weekly" className={selectItemStyles}>Weekly</SelectItem>
+                  <SelectItem value="Bi-weekly" className={selectItemStyles}>Bi-weekly (Every 2 weeks)</SelectItem>
+                  <SelectItem value="Monthly" className={selectItemStyles}>Monthly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
