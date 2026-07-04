@@ -20,8 +20,24 @@ export default function Home() {
     show: { opacity: 1, transition: { staggerChildren: 0.15 } }
   }
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "ASWB Mastery",
+    "url": "https://aswbcoaching.com",
+    "description": "Premium coaching and preparation for the ASWB exams, including LCSW, LMSW, LSW, and BSW. Master the new format with proven strategies.",
+    "offers": {
+      "@type": "Offer",
+      "category": "Educational service"
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-blue-200 relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <InteractiveBackground />
       
       {/* Navbar */}
