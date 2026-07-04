@@ -44,7 +44,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://aswbcoaching.com",
-  }
+  },
+  verification: {
+    google: "VOcw1F29UI390UJpBfymQZIs-iOsk5m7zhgFZ4g4yjs",
+  },
 };
 
 export default function RootLayout({
