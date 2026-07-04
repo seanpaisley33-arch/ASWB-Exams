@@ -60,7 +60,7 @@ export function IntakeForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="exam_type" className="text-zinc-700 font-medium">Target Exam</Label>
-              <Select name="exam_type" required value={examType} onValueChange={setExamType}>
+              <Select name="exam_type" required value={examType} onValueChange={(val) => val && setExamType(val)}>
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select Exam" />
                 </SelectTrigger>

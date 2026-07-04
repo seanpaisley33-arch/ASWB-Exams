@@ -7,15 +7,15 @@ import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Shield, Zap, Target, BrainCircuit, Users, CheckCircle2, ArrowRight, TrendingUp, Clock, BookOpen } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, Variants } from 'framer-motion'
 
 export default function Home() {
-  const fadeUp = {
+  const fadeUp: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   }
 
-  const staggerContainer = {
+  const staggerContainer: Variants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.15 } }
   }
