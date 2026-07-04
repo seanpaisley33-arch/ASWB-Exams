@@ -54,6 +54,7 @@ export type Database = {
           file_url?: string | null
           file_type?: string | null
           file_name?: string | null
+          is_edited?: boolean | null
         }
         Insert: {
           id?: number
@@ -65,9 +66,12 @@ export type Database = {
           file_url?: string | null
           file_type?: string | null
           file_name?: string | null
+          is_edited?: boolean | null
         }
         Update: {
           is_read?: boolean
+          is_edited?: boolean
+          message_body?: string | null
         }
       }
     }

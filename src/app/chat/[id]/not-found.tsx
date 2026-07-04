@@ -34,7 +34,7 @@ export default function NotFound() {
             setActiveSessions(ordered)
 
             // Purge deleted sessions from local storage
-            const validIds = ordered.map(s => s.id)
+            const validIds = ordered.map((s: any) => s.id)
             if (validIds.length !== ids.length) {
               localStorage.setItem('recent_sessions', JSON.stringify(validIds))
             }

@@ -38,9 +38,9 @@ export function DashboardClient({
   const [clientTyping, setClientTyping] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
   const [editingMessageText, setEditingMessageText] = useState('')
-  const [replyingTo, setReplyingTo] = useState<{id: string, body: string, sender: string} | null>(null)
+  const [replyingTo, setReplyingTo] = useState<{id: number, body: string, sender: string} | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -276,7 +276,7 @@ export function DashboardClient({
     await supabase.from('schedule_requests').update({ status }).eq('id', selectedRequestId)
   }
 
-  const handleDeleteMessage = async (msgId: string) => {
+  const handleDeleteMessage = async (msgId: number) => {
     if (!confirm("Are you sure you want to delete this message?")) return
     await supabase.from('chat_messages').delete().eq('id', msgId)
   }
@@ -609,10 +609,8 @@ export function DashboardClient({
                               </div>
                               
                               <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button className={`w-8 h-8 rounded-full items-center justify-center text-slate-400 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity flex`}>
-                                    <MoreVertical size={16} />
-                                  </button>
+                                <DropdownMenuTrigger className={`w-8 h-8 rounded-full items-center justify-center text-slate-400 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity flex shrink-0 focus:outline-none border-none`}>
+                                  <MoreVertical size={16} />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align={isAdmin ? "end" : "start"} className="w-48">
                                   {msg.message_body && (
@@ -624,7 +622,7 @@ export function DashboardClient({
                                     <Reply className="mr-2 h-4 w-4" /> Reply
                                   </DropdownMenuItem>
                                   {msg.file_url && (
-                                    <DropdownMenuItem onClick={() => window.open(msg.file_url, '_blank')}>
+                                    <DropdownMenuItem onClick={() => window.open(msg.file_url || undefined, '_blank')}>
                                       <Download className="mr-2 h-4 w-4" /> Download
                                     </DropdownMenuItem>
                                   )}
