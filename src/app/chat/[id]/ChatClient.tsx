@@ -342,7 +342,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
       </div>
 
       {/* Chat Area */}
-      <div className="lg:col-span-8 flex flex-col bg-white rounded-[2rem] shadow-sm border border-slate-200/60 overflow-hidden h-[75vh] lg:h-full">
+      <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl lg:rounded-[2rem] shadow-sm border border-slate-200/60 overflow-hidden h-[calc(100dvh-160px)] min-h-[400px] lg:h-full lg:min-h-0">
         
         {/* Chat Header */}
         <div className="border-b border-slate-100 p-5 bg-white shrink-0 flex items-center justify-between relative z-10">
@@ -585,7 +585,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
                     }
                   }}
                   placeholder="Type your message here... (Shift+Enter for new line)" 
-                  className="flex-1 min-h-[60px] max-h-40 rounded-3xl border-slate-200 focus-visible:ring-blue-500 bg-slate-50 hover:bg-slate-100/50 transition-colors resize-none py-4 px-6 font-medium shadow-inner text-base"
+                  className="flex-1 min-h-[60px] max-h-24 lg:max-h-40 rounded-3xl border-slate-200 focus-visible:ring-blue-500 bg-slate-50 hover:bg-slate-100/50 transition-colors resize-none py-4 px-6 font-medium shadow-inner text-base"
                   disabled={isSending}
                 />
               </>
