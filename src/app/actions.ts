@@ -134,6 +134,7 @@ export async function sendEmailNotification(requestId: string, messagePreview: s
 
     const { data, error: resendError } = await resend.emails.send({
       from: 'Coach <coach@aswbcoaching.com>', 
+      reply_to: request.email, // Best practice: avoids spam filters by having a valid reply-to
       to: [request.email],
       subject: 'New Message from Your Coach',
       html: `
