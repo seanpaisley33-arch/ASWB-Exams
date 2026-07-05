@@ -18,8 +18,7 @@ export async function loginAdmin(formData: FormData) {
       maxAge: 60 * 60 * 24, // 1 day
       path: '/',
     })
-    
-    redirect('/admin/dashboard')
+    return { success: true }
   } else {
     return { error: 'Invalid credentials' }
   }

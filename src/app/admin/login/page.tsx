@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { loginAdmin } from './actions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,17 +11,26 @@ import { Label } from '@/components/ui/label'
 export default function AdminLogin() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
     
-    const formData = new FormData(e.currentTarget)
-    const result = await loginAdmin(formData)
-    
-    if (result?.error) {
-      setError(result.error)
+    try {
+      const formData = new FormData(e.currentTarget)
+      const result = await loginAdmin(formData)
+      
+      if (result?.error) {
+        setError(result.error)
+        setIsLoading(false)
+      } else if (result?.success) {
+        router.push('/admin/dashboard')
+      }
+    } catch (err: any) {
+      console.error(err)
+      setError(err?.message || 'A network or server error occurred. Please try again.')
       setIsLoading(false)
     }
   }
