@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Send, Users, MessageSquare, ClipboardList, CheckCircle2, User, Phone, MapPin, Calendar, Clock, BookOpen, AlertCircle, Trash2, Loader2, Paperclip, X, FileIcon, ImageIcon, Check, CheckCheck, Mic, Square, MoreVertical, Copy, Edit2, Download, Reply } from 'lucide-react'
+import { Send, Users, MessageSquare, ClipboardList, CheckCircle2, User, Phone, MapPin, Calendar, Clock, BookOpen, AlertCircle, Trash2, Loader2, Paperclip, X, FileIcon, ImageIcon, Check, CheckCheck, Mic, Square, MoreVertical, Copy, Edit2, Download, Reply, ChevronLeft } from 'lucide-react'
 import { deleteScheduleRequest, sendEmailNotification } from '@/app/actions'
 import { MessageAttachment } from '@/components/MessageAttachment'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -367,9 +367,9 @@ export function DashboardClient({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100dvh-180px)] lg:h-[600px]">
         {/* Pipeline Data Table */}
-        <Card className="lg:col-span-2 shadow-sm border-slate-200 flex flex-col overflow-hidden">
+        <Card className={`lg:col-span-2 shadow-sm border-slate-200 flex-col overflow-hidden ${selectedRequestId ? 'hidden lg:flex' : 'flex'}`}>
           <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4 shrink-0">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Active Pipeline</CardTitle>
@@ -448,16 +448,21 @@ export function DashboardClient({
         </Card>
 
         {/* Integrated Chat Panel */}
-        <Card className="shadow-sm border-slate-200 flex flex-col overflow-hidden">
+        <Card className={`shadow-sm border-slate-200 flex-col overflow-hidden ${selectedRequestId ? 'flex' : 'hidden lg:flex'}`}>
           {selectedRequest ? (
             <>
               <CardHeader className="bg-slate-900 text-white border-b border-slate-800 py-4 shrink-0">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <Button onClick={() => setSelectedRequestId(null)} variant="ghost" size="icon" className="lg:hidden h-8 w-8 text-white hover:bg-slate-800 shrink-0">
+                      <ChevronLeft size={20} />
+                    </Button>
+                    <div>
                     <CardTitle className="text-base text-white">{selectedRequest.full_name}</CardTitle>
                     <CardDescription className="text-slate-400 text-xs mt-1">
                       {selectedRequest.exam_type} | {selectedRequest.study_hours} hrs {selectedRequest.study_frequency?.toLowerCase()}
                     </CardDescription>
+                  </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Select 
