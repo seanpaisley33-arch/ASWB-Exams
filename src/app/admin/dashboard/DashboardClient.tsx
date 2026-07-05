@@ -410,16 +410,25 @@ export function DashboardClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRequests.map(req => (
-                  <TableRow 
-                    key={req.id} 
-                    className={`cursor-pointer transition-colors ${selectedRequestId === req.id ? 'bg-blue-50 hover:bg-blue-50' : 'hover:bg-slate-50'}`}
-                    onClick={() => setSelectedRequestId(req.id)}
-                  >
-                    <TableCell>
-                      <p className="font-medium text-slate-900">{req.full_name}</p>
-                      <p className="text-xs text-slate-500">{req.email}</p>
-                    </TableCell>
+                {filteredRequests.map(req => {
+                  const unreadCount = messages.filter(m => m.request_id === req.id && m.sender_type === 'client' && !m.is_read).length;
+                  return (
+                    <TableRow 
+                      key={req.id} 
+                      className={`cursor-pointer transition-colors ${selectedRequestId === req.id ? 'bg-blue-50 hover:bg-blue-50' : 'hover:bg-slate-50'}`}
+                      onClick={() => setSelectedRequestId(req.id)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-slate-900">{req.full_name}</p>
+                          {unreadCount > 0 && (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500">{req.email}</p>
+                      </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <Badge variant="outline" className="w-fit text-[10px]">{req.exam_type}</Badge>
@@ -434,7 +443,7 @@ export function DashboardClient({
                       </Badge>
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
                 {filteredRequests.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center py-8 text-slate-500">
