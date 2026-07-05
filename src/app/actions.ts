@@ -133,18 +133,24 @@ export async function sendEmailNotification(requestId: string, messagePreview: s
     }
 
     const { data, error: resendError } = await resend.emails.send({
-      from: 'Coach <onboarding@resend.dev>', // Update this when you have a verified domain
+      from: 'Coach <coach@aswbcoaching.com>', 
       to: [request.email],
       subject: 'New Message from Your Coach',
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Hello ${request.full_name},</h2>
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #334155;">
+          <h2 style="color: #0f172a;">Hello ${request.full_name},</h2>
           <p>You have received a new message from your coach in your secure workspace.</p>
-          <div style="padding: 16px; background-color: #f8fafc; border-radius: 8px; margin: 16px 0; font-style: italic; color: #475569;">
+          <div style="padding: 16px; background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; margin: 24px 0; font-style: italic; color: #475569;">
             "${messagePreview || 'Attachment sent'}"
           </div>
-          <p>Please log in to your secure workspace to view and reply.</p>
-          <p style="margin-top: 32px; font-size: 12px; color: #94a3b8;">Please do not reply to this email.</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="https://aswbcoaching.com/chat/${requestId}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              Reply in Secure Workspace
+            </a>
+          </div>
+          <p style="margin-top: 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            Please do not reply directly to this email. Click the button above to access your classroom.
+          </p>
         </div>
       `
     })
