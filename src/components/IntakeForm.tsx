@@ -54,7 +54,7 @@ export function IntakeForm() {
         </div>
         <CardTitle className="text-3xl font-extrabold tracking-tight text-slate-900">Pass Your ASWB Exam with Expert Coaching</CardTitle>
         <CardDescription className="text-slate-500 text-base max-w-md mx-auto mt-3 font-medium">
-          Don't let the ASWB exam hold you back. Tell us your biggest roadblocks, and our expert coaches will build a custom roadmap to help you finally pass.
+          Don't let the ASWB exam hold you back. Tell us your biggest roadblocks below to instantly connect with an expert coach in your private chatroom and build a custom roadmap to pass.
         </CardDescription>
       </CardHeader>
 
