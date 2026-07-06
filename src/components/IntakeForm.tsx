@@ -52,9 +52,9 @@ export function IntakeForm() {
         <div className="mx-auto w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mb-4 shadow-sm border border-white">
           <Sparkles className="w-6 h-6 text-blue-600" />
         </div>
-        <CardTitle className="text-3xl font-extrabold tracking-tight text-slate-900">Start Your ASWB Journey</CardTitle>
+        <CardTitle className="text-3xl font-extrabold tracking-tight text-slate-900">Pass Your ASWB Exam with Expert Coaching</CardTitle>
         <CardDescription className="text-slate-500 text-base max-w-md mx-auto mt-3 font-medium">
-          Tell us about your goals and roadblocks, and we'll craft a custom roadmap for you.
+          Don't let the ASWB exam hold you back. Tell us your biggest roadblocks, and our expert coaches will build a custom roadmap to help you finally pass.
         </CardDescription>
       </CardHeader>
 
