@@ -199,7 +199,7 @@ export function IntakeForm() {
                 <Loader2 className="animate-spin" size={22} /> Analyzing Profile & Generating Portal...
               </span>
             ) : (
-              'Get My Custom Action Plan'
+              'Connect With a Coach (Get Action Plan)'
             )}
           </Button>
         </form>
