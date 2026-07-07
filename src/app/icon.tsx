@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const size = { width: 32, height: 32 }
+export const size = { width: 48, height: 48 }
 export const contentType = 'image/png'
 
 export default function Icon() {
@@ -9,7 +9,7 @@ export default function Icon() {
     (
       <div
         style={{
-          fontSize: 22,
+          fontSize: 32,
           background: 'linear-gradient(to bottom right, #4f46e5, #3b82f6)',
           width: '100%',
           height: '100%',
