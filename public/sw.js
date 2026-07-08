@@ -3,8 +3,6 @@ self.addEventListener('push', function (event) {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: '/icon.png', // Fallback icon (you can add a real icon to public/icon.png later)
-      badge: '/icon.png',
       vibrate: [100, 50, 100],
       data: {
         dateOfArrival: Date.now(),
