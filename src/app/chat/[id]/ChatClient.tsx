@@ -48,6 +48,9 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
   const [isEnabling, setIsEnabling] = useState(false)
+  
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -71,6 +74,15 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     } else {
       setNotifState(Notification.permission)
     }
+
+    // Capture the native PWA install prompt for Android/Desktop
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   }, [])
 
   useEffect(() => {
@@ -399,14 +411,33 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
                 </p>
               </div>
             ) : (
-              <Button 
-                onClick={handleEnableNotifications} 
-                className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700"
-                disabled={isEnabling}
-              >
-                {isEnabling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                Enable Notifications
-              </Button>
+              <div className="space-y-4">
+                <Button 
+                  onClick={handleEnableNotifications} 
+                  className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700"
+                  disabled={isEnabling}
+                >
+                  {isEnabling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                  Enable Notifications
+                </Button>
+                
+                {deferredPrompt && (
+                  <Button 
+                    onClick={async () => {
+                      deferredPrompt.prompt()
+                      const { outcome } = await deferredPrompt.userChoice
+                      if (outcome === 'accepted') {
+                        setDeferredPrompt(null)
+                      }
+                    }} 
+                    variant="outline"
+                    className="w-full h-12 text-lg font-bold border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Install App
+                  </Button>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
