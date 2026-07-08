@@ -2,8 +2,17 @@
 
 import { supabase } from '@/lib/supabase'
 import { Resend } from 'resend'
+import webpush from 'web-push'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  )
+}
 
 export async function submitScheduleRequest(formData: FormData) {
   const full_name = formData.get('full_name') as string
@@ -164,6 +173,85 @@ export async function sendEmailNotification(requestId: string, messagePreview: s
     return { success: true, data }
   } catch (error) {
     console.error('Error in sendEmailNotification:', error)
+    return { error: 'Internal Server Error' }
+  }
+}
+
+export async function subscribeToPush(subscription: any, userId: string) {
+  if (!subscription || !subscription.endpoint || !userId) {
+    return { error: 'Invalid subscription or userId' }
+  }
+
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert({
+      user_id: userId,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'endpoint' })
+
+  if (error) {
+    console.error('Error saving push subscription:', error)
+    return { error: 'Failed to save subscription' }
+  }
+
+  return { success: true }
+}
+
+export async function sendPushNotification(requestId: string, senderType: 'client' | 'admin', messagePreview: string) {
+  try {
+    // Determine the recipient's user_id
+    // If admin sends message, recipient is the client (userId = requestId)
+    // If client sends message, recipient is the admin (userId = 'admin')
+    const targetUserId = senderType === 'admin' ? requestId : 'admin'
+    const title = senderType === 'admin' ? 'New Message from Coach' : 'New Message from Client'
+
+    const { data: subscriptions, error } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .eq('user_id', targetUserId)
+
+    if (error || !subscriptions || subscriptions.length === 0) {
+      return { success: true, delivered: 0, note: 'No subscriptions found' }
+    }
+
+    const payload = JSON.stringify({
+      title,
+      body: messagePreview || 'Sent an attachment',
+      url: senderType === 'admin' ? `/chat/${requestId}` : `/admin/dashboard`
+    })
+
+    const sendPromises = subscriptions.map(async (sub) => {
+      const pushSubscription = {
+        endpoint: sub.endpoint,
+        keys: {
+          p256dh: sub.p256dh,
+          auth: sub.auth
+        }
+      }
+
+      try {
+        await webpush.sendNotification(pushSubscription, payload)
+        return true
+      } catch (err: any) {
+        if (err.statusCode === 404 || err.statusCode === 410) {
+          // Subscription has expired or is no longer valid, delete it
+          await supabase.from('push_subscriptions').delete().eq('id', sub.id)
+        } else {
+          console.error('Error sending push notification:', err)
+        }
+        return false
+      }
+    })
+
+    const results = await Promise.all(sendPromises)
+    const deliveredCount = results.filter(Boolean).length
+
+    return { success: true, delivered: deliveredCount }
+  } catch (error) {
+    console.error('Error in sendPushNotification:', error)
     return { error: 'Internal Server Error' }
   }
 }

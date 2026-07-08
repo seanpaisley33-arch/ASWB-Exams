@@ -12,6 +12,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Send, Clock, BookOpen, ShieldCheck, Copy, Check, Home, Target, Paperclip, Loader2, X, FileIcon, ImageIcon, CheckCheck, Mic, Square, MoreVertical, Edit2, Download, Reply, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PushNotificationManager } from '@/components/PushNotificationManager'
+import { InstallPrompt } from '@/components/InstallPrompt'
 
 export function ChatClient({ request, initialMessages }: { request: ScheduleRequest, initialMessages: ChatMessage[] }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
@@ -149,7 +151,10 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
         if (error) throw error
       }
 
-      // 3. Clear everything on success
+      // 3. Send Notifications (Non-blocking)
+      import('@/app/actions').then(m => m.sendPushNotification(request.id, 'client', textToSend || 'Sent an attachment')).catch(console.error)
+
+      // 4. Clear everything on success
       setNewMessage('')
       setReplyingTo(null)
       setSelectedFiles([])
@@ -271,6 +276,8 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[calc(100vh-9rem)]">
+      <PushNotificationManager userId={request.id} />
+      <InstallPrompt />
       
       {/* Sidebar Overview */}
       <div className="lg:col-span-4 flex flex-col gap-6 lg:h-full lg:overflow-y-auto pr-2 pb-4">

@@ -15,6 +15,8 @@ import { Send, Users, MessageSquare, ClipboardList, CheckCircle2, User, Phone, M
 import { deleteScheduleRequest, sendEmailNotification } from '@/app/actions'
 import { MessageAttachment } from '@/components/MessageAttachment'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PushNotificationManager } from '@/components/PushNotificationManager'
+import { InstallPrompt } from '@/components/InstallPrompt'
 
 export function DashboardClient({ 
   initialRequests, 
@@ -173,8 +175,9 @@ export function DashboardClient({
         if (error) throw error
       }
 
-      // 3. Send Email Notification (Non-blocking)
+      // 3. Send Notifications (Non-blocking)
       sendEmailNotification(selectedRequestId, textToSend || 'Sent an attachment').catch(console.error)
+      import('@/app/actions').then(m => m.sendPushNotification(selectedRequestId, 'admin', textToSend || 'Sent an attachment')).catch(console.error)
 
       // 4. Clear everything on success
       setNewMessage('')
@@ -330,6 +333,8 @@ export function DashboardClient({
 
   return (
     <div className="space-y-6">
+      <PushNotificationManager userId="admin" />
+      <InstallPrompt />
       {/* Metric Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="shadow-sm border-slate-200">
