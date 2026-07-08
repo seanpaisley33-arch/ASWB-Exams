@@ -12,8 +12,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Send, Clock, BookOpen, ShieldCheck, Copy, Check, Home, Target, Paperclip, Loader2, X, FileIcon, ImageIcon, CheckCheck, Mic, Square, MoreVertical, Edit2, Download, Reply, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PushNotificationManager } from '@/components/PushNotificationManager'
-import { InstallPrompt } from '@/components/InstallPrompt'
+import { subscribeToPush } from '@/app/actions'
+
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/')
+
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
 
 export function ChatClient({ request, initialMessages }: { request: ScheduleRequest, initialMessages: ChatMessage[] }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
@@ -29,12 +43,35 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
   const [editingMessageText, setEditingMessageText] = useState('')
   const [replyingTo, setReplyingTo] = useState<{id: number, body: string, sender: string} | null>(null)
 
+  // Notification Blocking State
+  const [notifState, setNotifState] = useState<'checking' | 'granted' | 'denied' | 'default'>('checking')
+  const [isIOS, setIsIOS] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
+  const [isEnabling, setIsEnabling] = useState(false)
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    // Detect iOS and Standalone
+    const userAgent = window.navigator.userAgent.toLowerCase()
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent)
+    setIsIOS(isIosDevice)
+    
+    const isStandaloneMode = ('standalone' in window.navigator) && !!(window.navigator as any).standalone
+    setIsStandalone(isStandaloneMode)
+
+    // Check Notification Permission
+    if (!('Notification' in window)) {
+      setNotifState('granted') // Ignore unsupported browsers completely (safari very old, etc.)
+    } else {
+      setNotifState(Notification.permission)
+    }
+  }, [])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -274,10 +311,119 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     navigator.clipboard.writeText(text)
   }
 
+  const handleEnableNotifications = async () => {
+    setIsEnabling(true)
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setNotifState('granted')
+        return
+      }
+
+      const permission = await Notification.requestPermission()
+      setNotifState(permission)
+
+      if (permission === 'granted') {
+        const registration = await navigator.serviceWorker.register('/sw.js')
+        const existingSubscription = await registration.pushManager.getSubscription()
+        
+        if (!existingSubscription) {
+          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+          if (vapidPublicKey) {
+            const newSubscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+            })
+            await subscribeToPush(JSON.parse(JSON.stringify(newSubscription)), request.id)
+          }
+        } else {
+          await subscribeToPush(JSON.parse(JSON.stringify(existingSubscription)), request.id)
+        }
+      }
+    } catch (err) {
+      console.error('Error enabling notifications:', err)
+    } finally {
+      setIsEnabling(false)
+    }
+  }
+
+  // Block the UI if notifications are not enabled
+  if (notifState !== 'granted' && notifState !== 'checking') {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <Card className="max-w-md w-full shadow-xl border-slate-200">
+          <CardHeader className="text-center pb-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🔔</span>
+            </div>
+            <CardTitle className="text-2xl">Enable Notifications</CardTitle>
+            <CardDescription className="text-base mt-2">
+              To chat with your coach and receive instant updates on your study plan, you must enable notifications.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isIOS && !isStandalone ? (
+              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                <h4 className="font-bold text-amber-900 mb-2 flex items-center gap-2">
+                  📱 iPhone/iPad Setup Required
+                </h4>
+                <p className="text-sm text-amber-800 leading-relaxed">
+                  Apple requires you to add this app to your Home Screen to receive notifications.
+                </p>
+                
+                <Button 
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'ASWB Coaching',
+                        url: window.location.href
+                      }).catch(console.error)
+                    }
+                  }}
+                  className="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white font-bold h-12"
+                >
+                  <Share className="w-5 h-5 mr-2" />
+                  Tap Here to Share
+                </Button>
+
+                <div className="mt-4 text-sm font-medium text-amber-900 bg-white p-3 rounded-lg border border-amber-100">
+                  After tapping the button above (or the Share icon in your browser):<br/><br/>
+                  1. Scroll down and select <strong>"Add to Home Screen"</strong>.<br/><br/>
+                  2. Open the app from your home screen.
+                </div>
+              </div>
+            ) : notifState === 'denied' ? (
+              <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-center">
+                <h4 className="font-bold text-red-900 mb-2">Notifications Blocked</h4>
+                <p className="text-sm text-red-800">
+                  You have blocked notifications in your browser. To continue, click the <strong>lock icon 🔒</strong> in your address bar, change Notifications to <strong>Allow</strong>, and refresh the page.
+                </p>
+              </div>
+            ) : (
+              <Button 
+                onClick={handleEnableNotifications} 
+                className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700"
+                disabled={isEnabling}
+              >
+                {isEnabling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                Enable Notifications
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (notifState === 'checking') {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[calc(100vh-9rem)]">
-      <PushNotificationManager userId={request.id} />
-      <InstallPrompt />
       
       {/* Sidebar Overview */}
       <div className="lg:col-span-4 flex flex-col gap-6 lg:h-full lg:overflow-y-auto pr-2 pb-4">
