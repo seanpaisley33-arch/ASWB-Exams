@@ -148,8 +148,11 @@ export async function sendEmailNotification(requestId: string, messagePreview: s
       subject: 'New Message from Your Coach',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #334155;">
-          <h2 style="color: #0f172a;">Hello ${request.full_name},</h2>
-          <p>You have received a new message from your coach in your secure workspace.</p>
+          <div style="text-align: center; margin-bottom: 24px;">
+            <img src="https://aswbcoaching.com/icon.png" alt="ASWB Coaching" style="width: 64px; height: 64px; border-radius: 16px; display: inline-block;" />
+          </div>
+          <h2 style="color: #0f172a; text-align: center;">Hello ${request.full_name},</h2>
+          <p style="text-align: center;">You have received a new message from your coach in your secure workspace.</p>
           <div style="padding: 16px; background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; margin: 24px 0; font-style: italic; color: #475569;">
             "${messagePreview || 'Attachment sent'}"
           </div>
@@ -158,7 +161,7 @@ export async function sendEmailNotification(requestId: string, messagePreview: s
               Reply in Secure Workspace
             </a>
           </div>
-          <p style="margin-top: 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+          <p style="margin-top: 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center;">
             Please do not reply directly to this email. Click the button above to access your classroom.
           </p>
         </div>
