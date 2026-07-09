@@ -334,7 +334,25 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       <PushNotificationManager userId="admin" />
-      <InstallPrompt />
+      
+      {/* Test Notification Button (Temporary) */}
+      <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-blue-900">Push Notification Test</h3>
+          <p className="text-sm text-blue-800">Click this to see if notifications slide in on your screen locally.</p>
+        </div>
+        <Button 
+          onClick={async () => {
+            const { sendPushNotification } = await import('@/app/actions')
+            const res = await sendPushNotification('admin', 'client', 'This is a test notification! Did it slide in?')
+            alert('Test sent! Delivered count: ' + res.delivered)
+          }}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          Send Test Notification
+        </Button>
+      </div>
+
       {/* Metric Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="shadow-sm border-slate-200">
