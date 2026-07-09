@@ -413,30 +413,29 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
             ) : (
               <div className="space-y-4">
                 <Button 
-                  onClick={handleEnableNotifications} 
-                  className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700"
+                  onClick={async () => {
+                    await handleEnableNotifications()
+                    if (deferredPrompt) {
+                      try {
+                        deferredPrompt.prompt()
+                        const { outcome } = await deferredPrompt.userChoice
+                        if (outcome === 'accepted') {
+                          setDeferredPrompt(null)
+                        }
+                      } catch (err) {
+                        console.error('PWA Prompt error:', err)
+                      }
+                    }
+                  }} 
+                  className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 shadow-md"
                   disabled={isEnabling}
                 >
-                  {isEnabling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                  Enable Notifications
+                  {isEnabling ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Download className="w-5 h-5 mr-2" />}
+                  Enable & Install App
                 </Button>
-                
-                {deferredPrompt && (
-                  <Button 
-                    onClick={async () => {
-                      deferredPrompt.prompt()
-                      const { outcome } = await deferredPrompt.userChoice
-                      if (outcome === 'accepted') {
-                        setDeferredPrompt(null)
-                      }
-                    }} 
-                    variant="outline"
-                    className="w-full h-12 text-lg font-bold border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Install App
-                  </Button>
-                )}
+                <p className="text-xs text-slate-500 text-center">
+                  This will securely connect you to your coach and add a shortcut to your device.
+                </p>
               </div>
             )}
           </CardContent>
