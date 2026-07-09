@@ -234,13 +234,20 @@ export async function sendPushNotification(requestId: string, senderType: 'clien
 
       try {
         await webpush.sendNotification(pushSubscription, payload)
+        console.log(`✅ Push notification sent successfully to endpoint: ${sub.endpoint.substring(0, 30)}...`)
         return true
       } catch (err: any) {
+        console.error('❌ Push Notification Error Details:', {
+          statusCode: err.statusCode,
+          body: err.body,
+          endpoint: sub.endpoint,
+          error: err.message || err
+        })
+        
         if (err.statusCode === 404 || err.statusCode === 410) {
           // Subscription has expired or is no longer valid, delete it
+          console.log(`🗑️ Deleting expired subscription for ${targetUserId}`)
           await supabase.from('push_subscriptions').delete().eq('id', sub.id)
-        } else {
-          console.error('Error sending push notification:', err)
         }
         return false
       }
@@ -248,6 +255,8 @@ export async function sendPushNotification(requestId: string, senderType: 'clien
 
     const results = await Promise.all(sendPromises)
     const deliveredCount = results.filter(Boolean).length
+    
+    console.log(`📊 Push Notification Summary: Attempted ${subscriptions.length}, Delivered ${deliveredCount}`)
 
     return { success: true, delivered: deliveredCount }
   } catch (error) {
