@@ -1,15 +1,26 @@
 'use client'
 
+import { useState } from 'react'
 import { IntakeForm } from '@/components/IntakeForm'
 import { FindSessionModal } from '@/components/FindSessionModal'
 import { ReviewsSection } from '@/components/ReviewsSection'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { Button } from '@/components/ui/button'
-import { Shield, Zap, Target, BrainCircuit, Users, CheckCircle2, ArrowRight, TrendingUp, Clock, BookOpen, Mail } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Shield, Zap, Target, BrainCircuit, Users, CheckCircle2, ArrowRight, TrendingUp, Clock, BookOpen, Mail, Check } from 'lucide-react'
 import { motion, Variants } from 'framer-motion'
 
 export default function Home() {
+  const [emailCopied, setEmailCopied] = useState(false)
+
+  const handleEmailClick = (e: React.MouseEvent) => {
+    const email = process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'
+    navigator.clipboard.writeText(email).catch(() => {})
+    setEmailCopied(true)
+    setTimeout(() => setEmailCopied(false), 3000)
+  }
+
   const fadeUp: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
@@ -70,9 +81,13 @@ export default function Home() {
                   </svg>
                 </div>
               </a>
-              <a href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || ''}`} aria-label="Email">
-                <div className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors border border-slate-200 shadow-sm">
-                  <Mail className="w-6 h-6" />
+              <a 
+                href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'}`} 
+                onClick={handleEmailClick}
+                aria-label="Email"
+              >
+                <div className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors border shadow-sm ${emailCopied ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                  {emailCopied ? <Check className="w-6 h-6" /> : <Mail className="w-6 h-6" />}
                 </div>
               </a>
             </div>
@@ -89,9 +104,13 @@ export default function Home() {
                   </svg>
                 </div>
               </a>
-              <a href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || ''}`} aria-label="Email">
-                <div className="flex items-center justify-center w-11 h-11 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors border border-slate-200 shadow-sm">
-                  <Mail className="w-6 h-6" />
+              <a 
+                href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'}`} 
+                onClick={handleEmailClick}
+                aria-label="Email"
+              >
+                <div className={`flex items-center justify-center w-11 h-11 rounded-full transition-colors border shadow-sm ${emailCopied ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                  {emailCopied ? <Check className="w-6 h-6" /> : <Mail className="w-6 h-6" />}
                 </div>
               </a>
             </div>
@@ -384,11 +403,16 @@ export default function Home() {
                 Chat on WhatsApp
               </Button>
             </a>
-            <a href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || ''}`}>
-              <Button size="lg" className="bg-slate-800 hover:bg-slate-900 text-white h-14 px-8 rounded-full font-bold shadow-xl shadow-slate-900/20 border border-slate-700">
-                <Mail className="w-5 h-5 mr-2" />
-                Email Us
-              </Button>
+            <a 
+              href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'}`}
+              onClick={handleEmailClick}
+              className={cn(
+                buttonVariants({ variant: "default" }),
+                "bg-slate-800 hover:bg-slate-900 text-white h-14 px-8 rounded-full font-bold shadow-xl shadow-slate-900/20 border border-slate-700 flex items-center justify-center gap-2 cursor-pointer transition-all w-full sm:w-auto"
+              )}
+            >
+              {emailCopied ? <Check className="w-5 h-5 text-green-400" /> : <Mail className="w-5 h-5" />}
+              <span>{emailCopied ? 'Email Copied!' : 'Email Us'}</span>
             </a>
           </div>
         </motion.div>
