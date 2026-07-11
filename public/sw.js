@@ -1,4 +1,4 @@
-// VERSION: 3 (Added icon)
+// VERSION: 4 (Persistent Notifications)
 self.addEventListener('push', function (event) {
   if (event.data) {
     const data = event.data.json();
@@ -6,12 +6,21 @@ self.addEventListener('push', function (event) {
       body: data.body,
       icon: '/icon.png',
       badge: '/icon.png',
-      vibrate: [100, 50, 100],
+      vibrate: [200, 100, 200, 100, 200, 100, 200], // More aggressive vibration pattern
+      requireInteraction: true, // This forces the OS to KEEP the notification on screen until the user interacts!
+      tag: 'chat-message', // Groups notifications to prevent spamming
+      renotify: true, // Ensures it still vibrates/chimes even if replacing an existing notification
       data: {
         dateOfArrival: Date.now(),
         primaryKey: '2',
         url: data.url || '/'
       },
+      actions: [
+        {
+          action: 'reply',
+          title: 'Reply'
+        }
+      ]
     };
     event.waitUntil(self.registration.showNotification(data.title, options));
   }

@@ -4,15 +4,17 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase, ScheduleRequest, ChatMessage } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { EditRequestModal } from '@/components/EditRequestModal'
 import { MessageAttachment } from '@/components/MessageAttachment'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Send, Clock, BookOpen, ShieldCheck, Copy, Check, Home, Target, Paperclip, Loader2, X, FileIcon, ImageIcon, CheckCheck, Mic, Square, MoreVertical, Edit2, Download, Reply, Trash2, Share } from 'lucide-react'
+import { Send, Clock, BookOpen, ShieldCheck, Copy, Check, Home, Target, Paperclip, Loader2, X, FileIcon, ImageIcon, CheckCheck, Mic, Square, MoreVertical, Edit2, Download, Reply, Trash2, Share, Mail } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { subscribeToPush } from '@/app/actions'
+import { PushNotificationManager } from '@/components/PushNotificationManager'
 
 const urlBase64ToUint8Array = (base64String: string) => {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -30,12 +32,14 @@ const urlBase64ToUint8Array = (base64String: string) => {
 }
 
 export function ChatClient({ request, initialMessages }: { request: ScheduleRequest, initialMessages: ChatMessage[] }) {
+  const [currentRequest, setCurrentRequest] = useState<ScheduleRequest>(request)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [newMessage, setNewMessage] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [emailCopied, setEmailCopied] = useState(false)
   const [adminTyping, setAdminTyping] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
@@ -48,6 +52,8 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
   const [isEnabling, setIsEnabling] = useState(false)
+  const [isBypassed, setIsBypassed] = useState(false)
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false)
   
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
@@ -65,14 +71,27 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent)
     setIsIOS(isIosDevice)
     
+    // Detect In-App Browser (Facebook/Instagram/LinkedIn)
+    const isInApp = /fban|fbav|instagram|linkedin/.test(userAgent)
+    setIsInAppBrowser(isInApp)
+
     const isStandaloneMode = ('standalone' in window.navigator) && !!(window.navigator as any).standalone
     setIsStandalone(isStandaloneMode)
 
     // Check Notification Permission
     if (!('Notification' in window)) {
-      setNotifState('granted') // Ignore unsupported browsers completely (safari very old, etc.)
+      setNotifState('granted') // Ignore unsupported browsers completely
     } else {
       setNotifState(Notification.permission)
+      
+      // Auto-detect permission changes
+      if ('permissions' in navigator) {
+        navigator.permissions.query({ name: 'notifications' }).then((status) => {
+          status.onchange = () => {
+            setNotifState(status.state as any)
+          }
+        }).catch(console.error)
+      }
     }
 
     // Capture the native PWA install prompt for Android/Desktop
@@ -131,6 +150,14 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
         filter: `request_id=eq.${request.id}`
       }, (payload) => {
         setMessages((prev) => prev.filter(msg => msg.id !== payload.old.id))
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'schedule_requests',
+        filter: `id=eq.${request.id}`
+      }, (payload) => {
+        setCurrentRequest(payload.new as ScheduleRequest)
       })
       .subscribe()
 
@@ -201,7 +228,10 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
       }
 
       // 3. Send Notifications (Non-blocking)
-      import('@/app/actions').then(m => m.sendPushNotification(request.id, 'client', textToSend || 'Sent an attachment')).catch(console.error)
+      import('@/app/actions').then(m => {
+        m.sendPushNotification(request.id, 'client', textToSend || 'Sent an attachment').catch(console.error);
+        m.sendEmailNotification(request.id, textToSend || 'Sent an attachment').catch(console.error);
+      }).catch(console.error)
 
       // 4. Clear everything on success
       setNewMessage('')
@@ -312,6 +342,13 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleEmailClick = () => {
+    const email = process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'
+    navigator.clipboard.writeText(email).catch(() => {})
+    setEmailCopied(true)
+    setTimeout(() => setEmailCopied(false), 3000)
+  }
+
   const handleSaveEdit = async () => {
     if (!editingMessageId) return
     await supabase.from('chat_messages').update({ message_body: editingMessageText.trim(), is_edited: true }).eq('id', editingMessageId)
@@ -358,8 +395,8 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     }
   }
 
-  // Block the UI if notifications are not enabled
-  if (notifState !== 'granted' && notifState !== 'checking') {
+  // Block the UI if notifications are not enabled and not bypassed
+  if (notifState !== 'granted' && notifState !== 'checking' && !isBypassed) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
         <Card className="max-w-md w-full shadow-xl border-slate-200">
@@ -403,12 +440,47 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
                   2. Open the app from your home screen.
                 </div>
               </div>
-            ) : notifState === 'denied' ? (
-              <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-center">
-                <h4 className="font-bold text-red-900 mb-2">Notifications Blocked</h4>
-                <p className="text-sm text-red-800">
-                  You have blocked notifications in your browser. To continue, click the <strong>lock icon 🔒</strong> in your address bar, change Notifications to <strong>Allow</strong>, and refresh the page.
+            ) : isInAppBrowser ? (
+              <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 text-center">
+                <h4 className="font-bold text-purple-900 mb-2">App Browser Detected</h4>
+                <p className="text-sm text-purple-800 mb-4">
+                  You are viewing this inside Facebook or Instagram. Notifications are not supported here.
                 </p>
+                <div className="text-sm font-medium text-purple-900 bg-white p-3 rounded-lg border border-purple-100 mb-4">
+                  Tap the <strong>3 dots menu</strong> in the top corner of your screen and select <strong>"Open in Chrome"</strong> or <strong>"Open in System Browser"</strong> to continue.
+                </div>
+                <Button 
+                  onClick={() => {
+                    const intentUrl = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end`;
+                    window.location.href = intentUrl;
+                  }}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold h-12 mb-2"
+                >
+                  Force Open in Chrome
+                </Button>
+                <Button 
+                  onClick={() => setIsBypassed(true)}
+                  variant="ghost" 
+                  className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-100"
+                >
+                  I'm having trouble, continue anyway
+                </Button>
+              </div>
+            ) : notifState === 'denied' ? (
+              <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-center flex flex-col gap-3">
+                <h4 className="font-bold text-red-900 mb-1">Notifications Blocked</h4>
+                <p className="text-sm text-red-800">
+                  You have blocked notifications. Click the <strong>lock icon 🔒</strong> in your address bar, change Notifications to <strong>Allow</strong>, and we'll automatically let you in.
+                </p>
+                <div className="mt-2 pt-3 border-t border-red-200/50">
+                  <Button 
+                    onClick={() => setIsBypassed(true)}
+                    variant="ghost" 
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-100 h-10"
+                  >
+                    I'm having trouble, continue anyway
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -436,6 +508,13 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
                 <p className="text-xs text-slate-500 text-center">
                   This will securely connect you to your coach and add a shortcut to your device.
                 </p>
+                <Button 
+                  onClick={() => setIsBypassed(true)}
+                  variant="ghost" 
+                  className="w-full mt-2 text-slate-500 hover:text-slate-700"
+                >
+                  Continue without notifications
+                </Button>
               </div>
             )}
           </CardContent>
@@ -454,6 +533,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[calc(100vh-9rem)]">
+      <PushNotificationManager userId={currentRequest.id} />
       
       {/* Sidebar Overview */}
       <div className="lg:col-span-4 flex flex-col gap-6 lg:h-full lg:overflow-y-auto pr-2 pb-4">
@@ -468,10 +548,10 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
           <div className="flex items-start justify-between relative z-10 mb-6">
             <div>
               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Coaching Strategy</h2>
-              <p className="text-sm font-medium text-slate-500 mt-1">ID: {request.id.split('-')[0]}...</p>
+              <p className="text-sm font-medium text-slate-500 mt-1">ID: {currentRequest.id.split('-')[0]}...</p>
             </div>
-            <Badge variant="outline" className={`${getStatusColor(request.status)} capitalize font-bold px-3 py-1.5 shadow-sm`}>
-              {request.status}
+            <Badge variant="outline" className={`${getStatusColor(currentRequest.status)} capitalize font-bold px-3 py-1.5 shadow-sm`}>
+              {currentRequest.status}
             </Badge>
           </div>
 
@@ -480,13 +560,13 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
               <span className="text-blue-500 text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2">
                 <BookOpen className="w-3.5 h-3.5"/> Exam Tier
               </span>
-              <p className="font-extrabold text-blue-950 text-lg uppercase">{request.exam_type}</p>
+              <p className="font-extrabold text-blue-950 text-lg uppercase">{currentRequest.exam_type}</p>
             </div>
             <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/50 hover:bg-emerald-50 transition-colors">
               <span className="text-emerald-600 text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5 mb-2">
                 <Clock className="w-3.5 h-3.5"/> Target Date
               </span>
-              <p className="font-extrabold text-emerald-950 text-lg">{request.target_exam_date ? new Date(request.target_exam_date).toLocaleDateString() : 'N/A'}</p>
+              <p className="font-extrabold text-emerald-950 text-lg">{currentRequest.target_exam_date ? new Date(currentRequest.target_exam_date).toLocaleDateString() : 'N/A'}</p>
             </div>
           </div>
           
@@ -495,11 +575,11 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
               <Target className="w-3.5 h-3.5"/> Your Roadblocks
             </span>
             <p className="text-slate-700 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-sm leading-relaxed font-medium">
-              {request.roadblock_notes}
+              {currentRequest.roadblock_notes}
             </p>
           </div>
 
-          <EditRequestModal request={request} />
+          <EditRequestModal request={currentRequest} />
         </div>
 
         {/* Secure Link Card */}
@@ -527,6 +607,13 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
       {/* Chat Area */}
       <div className="lg:col-span-8 flex flex-col bg-white rounded-3xl lg:rounded-[2rem] shadow-sm border border-slate-200/60 overflow-hidden h-[calc(100dvh-160px)] min-h-[400px] lg:h-full lg:min-h-0">
         
+        {isBypassed && notifState !== 'granted' && (
+          <div className="bg-amber-100 text-amber-800 text-xs px-4 py-2 font-medium flex justify-between items-center shrink-0 border-b border-amber-200">
+            <span>⚠️ You are missing instant coach updates. Enable notifications in your browser settings.</span>
+            <button onClick={() => handleEnableNotifications()} className="font-bold underline hover:text-amber-900">Enable</button>
+          </div>
+        )}
+
         {/* Chat Header */}
         <div className="border-b border-slate-100 p-5 bg-white shrink-0 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-4">
@@ -537,9 +624,37 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
               <h2 className="text-xl font-bold text-slate-900">Coach Workspace</h2>
               <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Normally replies within 2-4 hours
+                Replies in less than 5 to 10 mins
               </p>
             </div>
+          </div>
+          {/* Contact Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <a 
+              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || ''}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "flex items-center justify-center text-green-600 border-green-200 hover:bg-green-50/50 shadow-sm font-bold w-11 h-11 p-0 sm:w-auto sm:h-11 sm:px-4 sm:gap-2 text-base shrink-0 rounded-xl transition-all"
+              )}
+            >
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+              </svg>
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+            <a 
+              href={`mailto:${process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'}`}
+              onClick={handleEmailClick}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "flex items-center justify-center text-slate-700 border-slate-200 hover:bg-slate-50 shadow-sm font-bold w-11 h-11 p-0 sm:w-auto sm:h-11 sm:px-4 sm:gap-2 text-base shrink-0 rounded-xl transition-all"
+              )}
+            >
+              {emailCopied ? <Check className="w-5 h-5 text-green-600 shrink-0" /> : <Mail className="w-5 h-5 shrink-0" />}
+              <span className="hidden sm:inline">{emailCopied ? 'Copied!' : 'Email'}</span>
+            </a>
           </div>
         </div>
         

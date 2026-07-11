@@ -63,3 +63,17 @@ ON CONFLICT (id) DO NOTHING;
 -- Set up Storage Security Policies for 'chat-attachments'
 CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING ( bucket_id = 'chat-attachments' );
 CREATE POLICY "Public Insert" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'chat-attachments' );
+
+-- Create push_subscriptions table for Web Push Notifications
+CREATE TABLE public.push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    endpoint TEXT UNIQUE NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Disable RLS for push_subscriptions to allow anonymous upserts and selects via server actions
+ALTER TABLE public.push_subscriptions DISABLE ROW LEVEL SECURITY;
