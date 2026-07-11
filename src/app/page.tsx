@@ -13,12 +13,21 @@ import { motion, Variants } from 'framer-motion'
 
 export default function Home() {
   const [emailCopied, setEmailCopied] = useState(false)
+  const [toastVisible, setToastVisible] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setToastVisible(true)
+    setTimeout(() => setToastVisible(false), 3000)
+  }
 
   const handleEmailClick = (e: React.MouseEvent) => {
     const email = process.env.NEXT_PUBLIC_COACH_EMAIL || 'drkevinaswb@gmail.com'
     navigator.clipboard.writeText(email).catch(() => {})
     setEmailCopied(true)
     setTimeout(() => setEmailCopied(false), 3000)
+    showToast("Email address copied successfully!")
   }
 
   const fadeUp: Variants = {
@@ -458,6 +467,24 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <AnimatePresence>
+        {toastVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-sm w-[90vw] border border-slate-700/50"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+              <Check className="w-5 h-5 text-blue-400" />
+            </div>
+            <p className="text-sm font-medium leading-tight">
+              {toastMessage}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

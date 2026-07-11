@@ -58,6 +58,16 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
 
+  // Custom Toast States
+  const [toastVisible, setToastVisible] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setToastVisible(true)
+    setTimeout(() => setToastVisible(false), 3000)
+  }
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -340,6 +350,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     navigator.clipboard.writeText(window.location.href)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    showToast("Secure workspace link copied successfully!")
   }
 
   const handleEmailClick = () => {
@@ -347,6 +358,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
     navigator.clipboard.writeText(email).catch(() => {})
     setEmailCopied(true)
     setTimeout(() => setEmailCopied(false), 3000)
+    showToast("Email address copied successfully!")
   }
 
   const handleSaveEdit = async () => {
@@ -358,6 +370,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
 
   const handleCopyText = (text: string) => {
     navigator.clipboard.writeText(text)
+    showToast("Message text copied successfully!")
   }
 
   const handleEnableNotifications = async () => {
@@ -899,6 +912,23 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
           </form>
         </div>
       </div>
+      <AnimatePresence>
+        {toastVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-sm w-[90vw] border border-slate-700/50"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+              <Check className="w-5 h-5 text-blue-400" />
+            </div>
+            <p className="text-sm font-medium leading-tight">
+              {toastMessage}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
