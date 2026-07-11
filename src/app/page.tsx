@@ -9,7 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Shield, Zap, Target, BrainCircuit, Users, CheckCircle2, ArrowRight, TrendingUp, Clock, BookOpen, Mail, Check } from 'lucide-react'
-import { motion, Variants } from 'framer-motion'
+import { motion, AnimatePresence, Variants } from 'framer-motion'
 
 export default function Home() {
   const [emailCopied, setEmailCopied] = useState(false)
