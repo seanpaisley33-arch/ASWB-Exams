@@ -637,7 +637,7 @@ export function ChatClient({ request, initialMessages }: { request: ScheduleRequ
               <h2 className="text-xl font-bold text-slate-900">Coach Workspace</h2>
               <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Replies in less than 5 to 10 mins
+                Replies in less than 3 to 5 mins
               </p>
             </div>
           </div>
