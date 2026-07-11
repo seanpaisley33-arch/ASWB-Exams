@@ -95,8 +95,9 @@ export function FindSessionModal({ children }: { children?: React.ReactNode }) {
       {/* Smart Redirect Button */}
       <div onClick={handleMainClick} className="cursor-pointer inline-block w-full text-center">
         {children || (
-          <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50 font-semibold h-9 px-4 w-full sm:w-auto">
-            Resume Session
+          <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50 font-semibold h-9 px-3 sm:px-4 text-xs sm:text-sm w-full sm:w-auto">
+            <span className="hidden sm:inline">Resume Session</span>
+            <span className="sm:hidden">Resume</span>
           </Button>
         )}
       </div>
