@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { ChatClient } from './ChatClient'
 import Link from 'next/link'
 
+import { HeaderContactButtons } from '@/components/HeaderContactButtons'
+
 export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
@@ -36,6 +38,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
               ASWB<span className="text-blue-600">Mastery</span>
             </h1>
           </Link>
+          <HeaderContactButtons />
         </div>
       </header>
       
