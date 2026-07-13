@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { loginAdmin } from './actions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,6 +41,15 @@ export default function AdminLogin() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
+          <div className="mb-2">
+            <Link 
+              href="/" 
+              className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-950 transition-colors font-medium"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
           <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
           <CardDescription>
             Enter your credentials to access the coaching dashboard
